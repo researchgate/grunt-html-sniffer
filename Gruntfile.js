@@ -19,7 +19,7 @@ module.exports = function (grunt) {
                     checkstyle : 'out/checkstyle.xml'
                 },
                 src : [
-                    '/home/researchgate/rg_dev/checkout/community/src/modules/*/stubs/**/*.html'
+                    'test/**/*.html'
                 ],
                 checks : {
                     classNameIsNotDynamic: {}
