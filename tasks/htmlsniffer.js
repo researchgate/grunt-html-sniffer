@@ -12,7 +12,7 @@ var htmlparser = require('../lib/parsers/htmlparser'),
     Queue = require('promise-queue'),
     glob = Promise.denodeify(require('glob')),
     flatten = require('flatten'),
-    checks = require('../lib/checks/checks.js'),
+    checks = require('../lib/checks'),
     reporters = require('../lib/reporters');
 
 Queue.configure(Promise);
@@ -61,6 +61,11 @@ module.exports = function (grunt) {
                         var check = checks[checkName],
                             config = checksConfig[checkName];
 
+                        if (!check) {
+                            grunt.fail.warn('Check ' + checkName + ' not found.');
+                            return;
+                        }
+
                         return check(data, config);
                     }
                 );
@@ -70,6 +75,8 @@ module.exports = function (grunt) {
         .then(function (results) {
             if (self.data.options.checkstyle) {
                 grunt.file.write(self.data.options.checkstyle, reporters.checkstyle(results));
+            } else {
+                reporters.console(grunt, results);
             }
 
             done();
