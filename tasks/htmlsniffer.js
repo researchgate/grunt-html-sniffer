@@ -73,6 +73,14 @@ module.exports = function (grunt) {
         )
         .then(flatten)
         .then(function (results) {
+            results.forEach(function (result) {
+                // correct line-number to be not zero based
+                result.errors.forEach(function (error) { error.line++; });
+            });
+
+            return results;
+        })
+        .then(function (results) {
             if (self.data.options.checkstyle) {
                 grunt.file.write(self.data.options.checkstyle, reporters.checkstyle(results));
             } else {
