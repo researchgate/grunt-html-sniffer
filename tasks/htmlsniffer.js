@@ -8,9 +8,8 @@
 
 'use strict';
 var htmlparser = require('../lib/parsers/htmlparser'),
-    Promise = require('promise'),
     Queue = require('promise-queue'),
-    glob = Promise.denodeify(require('glob')),
+    glob = require('glob'),
     flatten = require('flatten'),
     checks = require('../lib/checks'),
     reporters = require('../lib/reporters');
@@ -19,11 +18,19 @@ Queue.configure(Promise);
 
 function getFilesFromPath(patterns, options) {
     if (!patterns) {
-        grunt.fail.warn('No source file paths found.');
+        return Promise.reject(new Error('No source file paths found.'));
     }
 
     return Promise.all(patterns.map(function (pattern) {
-        return glob(pattern, options);
+        return new Promise(function (resolve, reject) {
+            glob(pattern, options, function (err, files) {
+                if (err) {
+                    return reject(err);
+                }
+
+                resolve(files);
+            });
+        });
     }));
 }
 
@@ -47,47 +54,46 @@ module.exports = function (grunt) {
             checksConfig = this.data.checks,
             self = this;
 
-        var results = getFilesFromPath(this.data.src)
+        getFilesFromPath(this.data.src)
             .then(flatten)
             .then(function (files) {
                 return Promise.all(mapQueued(50, files, htmlparser));
             })
-            .then(flatten);
+            .then(flatten)
+            .then(
+                function (data) {
+                    return Object.keys(checksConfig).map(
+                        function (checkName) {
+                            var check = checks[checkName],
+                                config = checksConfig[checkName];
 
-        results.then(
-            function (data) {
-                return Object.keys(checksConfig).map(
-                    function (checkName) {
-                        var check = checks[checkName],
-                            config = checksConfig[checkName];
+                            if (!check) {
+                                grunt.fail.warn('Check ' + checkName + ' not found.');
+                                return;
+                            }
 
-                        if (!check) {
-                            grunt.fail.warn('Check ' + checkName + ' not found.');
-                            return;
+                            return check(data, config);
                         }
+                    );
+                }
+            )
+            .then(flatten)
+            .then(function (results) {
+                results.forEach(function (result) {
+                    // correct line-number to be not zero based
+                    result.errors.forEach(function (error) { error.line++; });
+                });
 
-                        return check(data, config);
-                    }
-                );
-            }
-        )
-        .then(flatten)
-        .then(function (results) {
-            results.forEach(function (result) {
-                // correct line-number to be not zero based
-                result.errors.forEach(function (error) { error.line++; });
-            });
+                return results;
+            })
+            .then(function (results) {
+                if (self.data.options.checkstyle) {
+                    grunt.file.write(self.data.options.checkstyle, reporters.checkstyle(results));
+                } else {
+                    reporters.console(grunt, results);
+                }
 
-            return results;
-        })
-        .then(function (results) {
-            if (self.data.options.checkstyle) {
-                grunt.file.write(self.data.options.checkstyle, reporters.checkstyle(results));
-            } else {
-                reporters.console(grunt, results);
-            }
-
-            done();
-        }).done();
+                done();
+            }).catch(function (err) { throw err; });
     });
 };
