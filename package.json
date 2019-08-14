@@ -1,7 +1,7 @@
 {
   "name": "grunt-html-sniffer",
   "description": "Perform checks on your HTML files",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "homepage": "https://github.com/researchgate/grunt-html-sniffer",
   "author": {
     "name": "Bastian Hofmann",
