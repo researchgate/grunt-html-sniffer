@@ -7,45 +7,27 @@
  */
 
 'use strict';
-var htmlparser = require('../lib/parsers/htmlparser'),
-    Queue = require('promise-queue'),
-    glob = require('glob'),
-    flatten = require('flatten'),
-    checks = require('../lib/checks'),
-    reporters = require('../lib/reporters');
+const htmlparser = require('../lib/parsers/htmlparser');
+const Queue = require('promise-queue');
+const glob = require('fast-glob');
+const flatten = require('flatten');
+const checks = require('../lib/checks');
+const reporters = require('../lib/reporters');
 
 Queue.configure(Promise);
 
-function getFilesFromPath(patterns, options) {
+function getFilesFromPath(patterns) {
     if (!patterns) {
         return Promise.reject(new Error('No source file paths found.'));
     }
 
-    return Promise.all(patterns.map(function (pattern) {
-        return new Promise(function (resolve, reject) {
-            glob(pattern, options, function (err, files) {
-                if (err) {
-                    return reject(err);
-                }
-
-                resolve(files);
-            });
-        });
-    }));
+    return Promise.all(patterns.map(pattern => glob(pattern)));
 }
 
 function mapQueued(numConcurrent, keys, fn) {
-    var queue = new Queue(numConcurrent, Infinity);
-    var promises = keys.map(
-        function (key) {
-            return queue.add(
-                function () {
-                    return fn(key);
-                }
-            );
-        }
-    );
-    return promises;
+    const queue = new Queue(numConcurrent, Infinity);
+
+    return keys.map(key => queue.add(() => fn(key)));
 }
 
 module.exports = function (grunt) {

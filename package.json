@@ -16,19 +16,19 @@
   },
   "license": "MIT",
   "engines": {
-    "node": ">= 4"
+    "node": ">= 8"
   },
   "scripts": {
     "test": "grunt test"
   },
   "dependencies": {
+    "fast-glob": "^3.0.4",
     "flatten": "^1.0.2",
-    "glob": "^7.0.3",
-    "promise-queue": "^2.1.1"
+    "promise-queue": "^2.2.5"
   },
   "devDependencies": {
-    "grunt": "^1.0.1",
-    "grunt-contrib-jshint": "^1.0.0"
+    "grunt": "^1.0.4",
+    "grunt-contrib-jshint": "^2.1.0"
   },
   "peerDependencies": {
     "grunt": ">=0.4.0"
